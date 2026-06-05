@@ -103,7 +103,7 @@ def send_staff_notification(inquiry_details: dict, reference_number: str) -> boo
                 <p style="color: #666;">Please respond within 5 minutes</p>
                 <p style="color: #666;">Reference: {reference_number}</p>
                 <p style="color: #666; font-size: 12px;">
-                    Cirrus International Logistics | Karachi, Pakistan
+                    ABC International Logistics | Karachi, Pakistan
                 </p>
             </div>
         </body>
@@ -143,7 +143,7 @@ def send_customer_acknowledgment(
             <div style="background: linear-gradient(90deg, #1e3a5f, #2196F3);
                         padding: 20px; border-radius: 10px; color: white;
                         text-align: center;">
-                <h1>Cirrus International Logistics</h1>
+                <h1>ABC International Logistics</h1>
             </div>
             <div style="padding: 30px;">
                 <h2>Dear {customer_name},</h2>
@@ -168,7 +168,7 @@ def send_customer_acknowledgment(
                     <p>Karachi, Pakistan</p>
                 </div>
                 <p>Best Regards,</p>
-                <p><strong>Cirrus International Logistics Team</strong></p>
+                <p><strong>ABC International Logistics Team</strong></p>
             </div>
         </body>
         </html>
@@ -208,7 +208,7 @@ def send_quote_to_customer(
             <div style="background: linear-gradient(90deg, #1e3a5f, #2196F3);
                         padding: 20px; border-radius: 10px; 
                         color: white; text-align: center;">
-                <h1>Cirrus International Logistics</h1>
+                <h1>ABC International Logistics</h1>
             </div>
             <div style="padding: 30px;">
                 <h2>Dear {customer_name},</h2>
@@ -233,7 +233,7 @@ def send_quote_to_customer(
                     <p>Karachi, Pakistan</p>
                 </div>
                 <p>Best Regards,</p>
-                <p><strong>Cirrus International Logistics Team</strong></p>
+                <p><strong>ABC International Logistics Team</strong></p>
             </div>
         </body>
         </html>
