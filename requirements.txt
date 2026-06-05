@@ -1,0 +1,8 @@
+streamlit
+langchain
+langchain-core
+langchain-groq
+langchain-openai
+python-dotenv
+reportlab
+secure-smtplib

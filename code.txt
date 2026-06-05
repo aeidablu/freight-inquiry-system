@@ -1,0 +1,175 @@
+AGENT CODE
+
+from langchain_openai import ChatOpenAI
+from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.tools import tool
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+@tool
+def get_sea_freight_quote(origin: str, destination: str, weight_kg: float, cargo_type: str) -> str:
+    """Get sea freight quote based on shipment details."""
+    base_rates = {
+        "general": 2.5,
+        "hazardous": 5.0,
+        "perishable": 4.0,
+        "garments": 2.0
+    }
+    rate = base_rates.get(cargo_type.lower(), 3.0)
+    cost = weight_kg * rate
+    transit_days = 25 if "karachi" in origin.lower() else 30
+    return f"""
+    🚢 SEA FREIGHT QUOTE:
+    Route: {origin} → {destination}
+    Weight: {weight_kg} kg
+    Cargo: {cargo_type}
+    Estimated Cost: ${cost:.2f} USD
+    Transit Time: {transit_days}-35 days
+    Carrier: Multiple options available
+    """
+
+@tool
+def get_air_freight_quote(origin: str, destination: str, weight_kg: float, cargo_type: str) -> str:
+    """Get air freight quote based on shipment details."""
+    base_rates = {
+        "general": 8.0,
+        "hazardous": 15.0,
+        "perishable": 12.0,
+        "garments": 7.0
+    }
+    rate = base_rates.get(cargo_type.lower(), 9.0)
+    cost = weight_kg * rate
+    return f"""
+    ✈️ AIR FREIGHT QUOTE:
+    Route: {origin} → {destination}
+    Weight: {weight_kg} kg
+    Cargo: {cargo_type}
+    Estimated Cost: ${cost:.2f} USD
+    Transit Time: 3-7 days
+    Carrier: Multiple airlines available
+    """
+
+@tool
+def get_customs_requirements(origin_country: str, destination_country: str, cargo_type: str) -> str:
+    """Get customs documentation requirements for the shipment."""
+    docs = [
+        "Commercial Invoice",
+        "Packing List",
+        "Bill of Lading / Airway Bill",
+        "Certificate of Origin"
+    ]
+    if cargo_type.lower() == "garments":
+        docs.append("Textile Declaration Form")
+    if cargo_type.lower() == "hazardous":
+        docs.append("MSDS (Material Safety Data Sheet)")
+        docs.append("DGD (Dangerous Goods Declaration)")
+    docs_list = "\n  - ".join(docs)
+    return f"""
+    📋 CUSTOMS REQUIREMENTS:
+    Route: {origin_country} → {destination_country}
+    Required Documents:
+    - {docs_list}
+    Estimated Customs Clearance: 2-5 business days
+    HS Code Research Recommended for: {cargo_type}
+    """
+
+def create_freight_agent():
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0,
+        api_key=os.getenv("OPENAI_API_KEY")
+    )
+    tools = [get_sea_freight_quote, get_air_freight_quote, get_customs_requirements]
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are an expert freight forwarding assistant with deep knowledge
+        of international logistics, customs compliance, and shipping routes.
+        You help clients get freight quotes, understand customs requirements,
+        and choose the best shipping option for their needs.
+        Always:
+        - Compare both sea and air freight options
+        - Mention customs documentation needed
+        - Give a clear recommendation based on urgency and budget
+        - Be professional and concise
+        You specialize in Pakistan trade routes (Karachi port) and garment/textile shipments.
+        """),
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("human", "{input}"),
+        MessagesPlaceholder(variable_name="agent_scratchpad"),
+    ])
+    agent = create_openai_functions_agent(llm, tools, prompt)
+    return AgentExecutor(
+        agent=agent,
+        tools=tools,
+        verbose=True,
+        max_iterations=5
+    )
+
+
+
+
+
+APP CODE
+
+import streamlit as st
+from agent import create_freight_agent
+from langchain_core.messages import HumanMessage, AIMessage
+
+st.set_page_config(
+    page_title="AI Freight Assistant",
+    page_icon="🚢",
+    layout="wide"
+)
+
+st.title("🚢 AI Freight Quote Assistant")
+st.caption("Powered by AI | Built for International Logistics")
+
+with st.sidebar:
+    st.header("📦 Quick Quote")
+    origin = st.text_input("Origin City/Port", placeholder="Karachi, Pakistan")
+    destination = st.text_input("Destination", placeholder="Istanbul, Turkey")
+    weight = st.number_input("Weight (kg)", min_value=1.0, value=500.0)
+    cargo_type = st.selectbox(
+        "Cargo Type",
+        ["Garments", "General", "Perishable", "Hazardous"]
+    )
+    if st.button("🔍 Get AI Quote", type="primary"):
+        query = f"I need a freight quote from {origin} to {destination} for {weight}kg of {cargo_type}. Please compare sea and air freight and advise on customs requirements."
+        st.session_state.auto_query = query
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+    st.session_state.chat_history = []
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if "auto_query" in st.session_state:
+    prompt = st.session_state.auto_query
+    del st.session_state.auto_query
+else:
+    prompt = st.chat_input("Ask about freight rates, customs, shipping routes...")
+
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    with st.chat_message("assistant"):
+        with st.spinner("Getting best freight options..."):
+            agent = create_freight_agent()
+            response = agent.invoke({
+                "input": prompt,
+                "chat_history": st.session_state.chat_history
+            })
+            answer = response["output"]
+            st.markdown(answer)
+    st.session_state.messages.append({"role": "assistant", "content": answer})
+    st.session_state.chat_history.extend([
+        HumanMessage(content=prompt),
+        AIMessage(content=answer)
+    ])
+
+
