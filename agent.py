@@ -3,8 +3,17 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from dotenv import load_dotenv
 import os
 import json
+import streamlit as st
 
-load_dotenv()
+load_dotenv(override= True)
+
+# Works both locally and on Streamlit Cloud
+def get_secret(key):
+    try:
+        return st.secrets[key]
+    except:
+        return get_secret(key)
+
 
 SYSTEM_PROMPT = """You are a freight inquiry assistant for ABC International Logistics Karachi.
 
@@ -21,7 +30,7 @@ def run_agent(user_input: str, chat_history: list) -> str:
     llm = ChatGroq(
         model="llama-3.3-70b-versatile",
         temperature=0.3,
-        api_key=os.getenv("GROQ_API_KEY")
+        api_key=get_secret("GROQ_API_KEY")
     )
 
     system_message = SystemMessage(content=SYSTEM_PROMPT)
@@ -34,7 +43,7 @@ def extract_inquiry_details(chat_history: list) -> dict:
     llm = ChatGroq(
         model="llama-3.3-70b-versatile",
         temperature=0,
-        api_key=os.getenv("GROQ_API_KEY")
+        api_key=get_secret("GROQ_API_KEY")
     )
 
      # Convert chat history to readable text
